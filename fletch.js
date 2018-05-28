@@ -53,9 +53,22 @@ const JSONStream = require('JSONStream');
 	}));
     }
 
-    process.stdin.pipe(JSONStream.parse()).on('data', async (data) => {
-	const browser = await puppeteer.launch({ args: ['--no-sandbox'] });
+    const browser = await puppeteer.launch({ args: ['--no-sandbox'] });
+    if (process.argv.length > 2) {
+	const data = [];
+	for (let i = 2; i < process.argv.length; i++) {
+	    [dir, name] = process.argv[i].split(':');
+	    data.push({ dir , name });
+	}
 	console.log(await fletch(browser, data));
-	await browser.close();
-    });
+    } else {
+	await new Promise(async (success, fail) => {
+	    process.stdin.pipe(JSONStream.parse()).on('data', async (data) => {
+		const ret = await fletch(browser, data);
+		console.log(ret);
+		success(ret);
+	    });
+	});
+    }
+    await browser.close();
 })();
