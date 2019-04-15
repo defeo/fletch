@@ -6,6 +6,7 @@ const fs = require('fs');
 const zlib = require('zlib');
 const tar = require('tar-fs');
 const JSONStream = require('JSONStream');
+const Promise = require("bluebird");
 
 (async () => {
 
@@ -30,8 +31,8 @@ const JSONStream = require('JSONStream');
 	});
     }
 
-    async function fletch(browser, projects) {
-	return Promise.all(projects.map(async (p) => {
+    async function fletch(browser, projects, concurrency=1) {
+	return Promise.map(projects, async (p) => {
 	    const dirlog = `\x1b[1m${p.dir}\x1b[0m`;
 	    const [rd, gn, yw, rs] = ['\x1b[31m', '\x1b[32m', '\x1b[33m', '\x1b[0m'];
 	    if (fs.existsSync(p.dir)) {
@@ -50,7 +51,9 @@ const JSONStream = require('JSONStream');
 		    return { success: false, ...p };
 		}
 	    }
-	}));
+	}, {
+	    concurrency,
+	});
     }
 
     const browser = await puppeteer.launch({ args: ['--no-sandbox'] });
